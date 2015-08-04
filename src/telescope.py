@@ -410,7 +410,7 @@ class telescope:
 		return self.command( "CANCEL" )
 	
 	def comELAZ( self, el, az ):
-		return self.command("ELAZ {el}, az".format(el.deg10, az.deg10))
+		return self.command("ELAZ {el}, {az}".format(el=el.deg10, az=az.deg10))
 	
 	
 	
