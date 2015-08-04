@@ -265,6 +265,37 @@ class telescope:
 			}
 		return prog
 	
+		
+		
+	def reqGETSATELAZ(self):
+		respStr = self.request( "GETSATELAZ"  )
+		respList = [val for val in respStr.split(' ') if val != '']
+		try :
+			alt, az = Deg10( float( respList[0] ) ), Deg10( float(respList[1]) )
+		except(Exception):
+			return []
+			
+		return [alt, az]
+	
+	def comSATTRACK( self, track=False ):
+	
+		"""if track start tracking the current tle
+		satellite if not stop stracking."""
+		if track:
+			self.command( "SATTRACK START" )
+		else:
+			self.command( "SATTRACK STOP" )	
+		
+	def comTLE( self, tle ):
+		"""Set the satellite tle. This will not actually move the
+		telescope. It will allow you to request the alt and az of 
+		a this satellite. To track a satellite use the comSATTRACK
+		The tle argument is a python on list where the 0 element is
+		ignored line 1 is element 1 and line to is element 2."""
+		
+		com = "TLE\n{0}\n{1}\n".format(tle[1], tle[2])
+		return self.command( com )
+	
 	def comPEC( self, arg ):
 		out = ""
 		if arg == "ON":
