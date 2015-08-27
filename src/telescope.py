@@ -292,8 +292,22 @@ class telescope:
 		a this satellite. To track a satellite use the comSATTRACK
 		The tle argument is a python on list where the 0 element is
 		ignored line 1 is element 1 and line to is element 2."""
-		
-		com = "TLE\n{0}\n{1}\n".format(tle[1], tle[2])
+		if type(tle) == str:
+			com = "TLE\n"+tle
+		elif type(tle) == list:
+			tlelines = ['','']
+			for line in tle:
+				if line is not '':
+					if line[0] == '1':
+						tlelines[0] = line
+					elif line[0] == '2':
+						tlelines[1] = line
+					
+			if tlelines[0] is '' or tlelines[1] is '':
+				raise(Exception)
+			else:
+				com = "TLE\n{0}\n{1}\n".format(tlelines[0], tlelines[1])
+
 		return self.command( com )
 	
 	def comPEC( self, arg ):
@@ -599,7 +613,14 @@ class telescope:
 
 	def reqST( self ):
 		return self.request("ST")
-		 
+
+
+class ray( telescope ):
+	def __init__(self ):
+		telescope.__init__(self, "qnxtcs" )
+		
+		
+		
 class telComError( Exception ):
 	def __init__( self, message ):
 		Exception.__init__( self, message)
