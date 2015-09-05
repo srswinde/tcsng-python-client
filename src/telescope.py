@@ -619,7 +619,9 @@ class ray( telescope ):
 	def __init__(self ):
 		telescope.__init__(self, "qnxtcs" )
 		
-		
+class kuiper( telescope ):
+	def __init__( self ):
+		telescope.__init__( self, "10.30.5.69", "BIG61" )		
 		
 class telComError( Exception ):
 	def __init__( self, message ):
