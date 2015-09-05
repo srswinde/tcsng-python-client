@@ -175,9 +175,9 @@ class telescope:
 
 	def reqALL( self ):
 		"""returns dictions of "ALL" request i.e.
-			[MOT] [RA] [DEC] [HA] [UT] [ALT] [AZ] [SECZ] [Epoch]"""
+			[MOT] [RA] [DEC] [HA] [LST] [ALT] [AZ] [SECZ] [Epoch]"""
 		allDict = {}
-		names = ["motion", "ra", "dec", "ha", "ut", "alt", "az", "secz", "epoch"]
+		names = ["motion", "ra", "dec", "ha", "lst", "alt", "az", "secz", "epoch"]
 		rawStr = self.request("ALL")
 		rawList = [ii for ii in rawStr.split(" ") if ii != '']
 		
