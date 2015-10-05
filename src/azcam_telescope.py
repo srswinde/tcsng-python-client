@@ -1,5 +1,5 @@
 import socket
-
+DEBUG = True
 class telescope:
 	
 	
@@ -19,7 +19,6 @@ class telescope:
 		except socket.error:
 			raise telComError("Cannot Find Telescope Host {0}.".format(hostname) )
 		
-		self.comLock = Lock()
 		#Make sure we can talk to this telescope
 		if not self.request( 'EL' ):
 			raise socket.error
@@ -73,7 +72,10 @@ class telescope:
 		names = ["motion", "ra", "dec", "ha", "lst", "alt", "az", "secz", "epoch"]
 		rawStr = self.request("ALL")
 		rawList = [ii for ii in rawStr.split(" ") if ii != '']
-		
+		for num in range( len(rawList) ):
+			allDict[names[num]] = rawList[num]
+			
+		return allDict
 		
 	def reqXALL( self ):
 		"""returns dictions of "XALL" request i.e.
@@ -87,20 +89,38 @@ class telescope:
 			xallDict[names[num]] = rawList[num]
 
 		return xallDict
-		
+	
+	def reqTIME( self ):
+		timeStr = self.request( "TIME" )
+		return timeStr
+
 	def azcam_all( self ):
+		"""Grab all the data necessary to populate the fits headers for SO cameras."""
 		azcamall = {}
 		
 		vals = ['ha', 'iis', 'utd', 'ut', 'focus', 'epoch', 'motion', 'lst', 'pa', 'ra', 'jd', 'alt', 'az', 'dec', 'dome', 'secz']
-		azcamall.update( reqALL() )
-		azcamall.update( reqXALL() )
-		for key in vals:
-			if key not in azcamall.keys():
-				print key
+		azcamall.update( self.reqALL() )
+		azcamall.update( self.reqXALL() )
+		azcamall['ut'] = self.reqTIME()
+		return azcamall
 		
+	def comSTEPRA( self, dist_in_asecs ):
+		"""Bump ra drive"""
+		return self.command("STEPRA {0}".format( dist_in_asecs ) )
+
+	def comSTEPDEC( self, dist_in_asecs ):
+		"""Bump dec drive"""
+		return self.command("STEPDEC {0}".format( dist_in_asecs ) )
+
+	def radecguide( self, ra, dec ):
+		"""Send a telcom style guide command"""
+		raresp = self.STEPRA( ra  )
+		decresp = self.STEPDEC( dec )
+		return [raresp, decresp]
 		
-		
-		
+if __name__ == "__main__":
+	tel = telescope("10.30.5.69", "BIG61", 5750)
+	print tel.azcam_all()
 		
 		
 		
