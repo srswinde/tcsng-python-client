@@ -265,7 +265,12 @@ class telescope:
 			}
 		return prog
 	
+	def reqLIMIT( self ):
+		raw = self.request("LIMIT")
 		
+		p1, p2 = raw.split()
+		
+		return {'limport1': hex(int(p1)), 'limport2': hex(int(p2))}	
 		
 	def reqGETSATELAZ(self):
 		respStr = self.request( "GETSATELAZ"  )
@@ -607,6 +612,19 @@ class telescope:
 
 	def comDomeAutoOn( self ):
 		return self.command("DOME AUTO ON")
+
+	def comLIMIT(inhibit=False):
+		"""If limit is true inhibits TCS limits
+			this is very dangerous!
+			else egages the limts.
+		"""
+		if inhibit:
+			com = "LIMIT INHIBIT"
+			
+		else:
+			com = "LIMIT"
+			
+		return self.command(com)
 
 	def reqTIME( self ):
 		return self.request("TIME")
