@@ -613,6 +613,17 @@ class telescope:
 	def comDomeAutoOn( self ):
 		return self.command("DOME AUTO ON")
 
+	def comDOMEGOTO( self, dome_az ):
+		return self.command("DOMEGOTO {az:.2f}".format(az=dome_az))
+
+	def comDOME_LEFT( self ):
+		return self.command( "DOME PADDLE LEFT" )
+
+	def comDOME_RIGHT( self ):
+		return self.command( "DOME PADDLE RIGHT" )
+
+
+	
 	def comLIMIT(inhibit=False):
 		"""If limit is true inhibits TCS limits
 			this is very dangerous!
