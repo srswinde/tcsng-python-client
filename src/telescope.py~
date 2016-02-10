@@ -59,7 +59,7 @@ class telescope:
 			raise socket.error
 			
 		
-	def request( self, reqstr, timeout=1.0, retry=True):
+	def request( self, reqstr, timeout=0.1, retry=True):
 				
 		"""This is the main TCSng request method all 
 		server requests must come through here."""
@@ -91,7 +91,6 @@ class telescope:
 		s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.connect((HOST, PORT))
 		s.send("%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() ) )
-		print "%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() )
 		recvstr = s.recv( 4096 ) 
 		s.settimeout( timeout )
 		s.close()
@@ -312,8 +311,8 @@ class telescope:
 			if tlelines[0] is '' or tlelines[1] is '':
 				raise(Exception)
 			else:
-				com = "TLE\n{0}\n{1}\n".format( tlelines[0], tlelines[1] )
-		
+				com = "TLE\n{0}\n{1}\n".format(tlelines[0], tlelines[1])
+
 		return self.command( com )
 	
 	def comPEC( self, arg ):
@@ -615,15 +614,7 @@ class telescope:
 		return self.command("DOME AUTO ON")
 
 	def comDOMEGOTO( self, dome_az ):
-		return self.command("DOMEGOTO {az:.2f}".format(az=dome_az))
-
-	def comDOME_LEFT( self ):
-		return self.command( "DOME PADDLE LEFT" )
-
-	def comDOME_RIGHT( self ):
-		return self.command( "DOME PADDLE RIGHT" )
-
-
+		return self.command("DOMEGOTO {az}".format(az=dome_az))
 	
 	def comLIMIT(inhibit=False):
 		"""If limit is true inhibits TCS limits
