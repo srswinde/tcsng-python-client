@@ -59,7 +59,7 @@ class telescope:
 			raise socket.error
 			
 		
-	def request( self, reqstr, timeout=1.0, retry=True):
+	def request( self, reqstr, timeout=0.1, retry=True):
 				
 		"""This is the main TCSng request method all 
 		server requests must come through here."""
@@ -91,7 +91,6 @@ class telescope:
 		s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.connect((HOST, PORT))
 		s.send("%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() ) )
-		print "%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() )
 		recvstr = s.recv( 4096 ) 
 		s.settimeout( timeout )
 		s.close()
@@ -266,12 +265,7 @@ class telescope:
 			}
 		return prog
 	
-	def reqLIMIT( self ):
-		raw = self.request("LIMIT")
 		
-		p1, p2 = raw.split()
-		
-		return {'limport1': hex(int(p1)), 'limport2': hex(int(p2))}	
 		
 	def reqGETSATELAZ(self):
 		respStr = self.request( "GETSATELAZ"  )
@@ -312,8 +306,8 @@ class telescope:
 			if tlelines[0] is '' or tlelines[1] is '':
 				raise(Exception)
 			else:
-				com = "TLE\n{0}\n{1}\n".format( tlelines[0], tlelines[1] )
-		
+				com = "TLE\n{0}\n{1}\n".format(tlelines[0], tlelines[1])
+
 		return self.command( com )
 	
 	def comPEC( self, arg ):
@@ -537,6 +531,14 @@ class telescope:
 		
 		self.command( comString )
 
+	def comSetOneServo( self, axis, servoName, servoVal ):
+		newServo = self.reqSERVO( axis )
+		
+		if servoName in newServo.keys():
+			newServo[servoName] = int( servoVal )
+		
+		return self.comSERVO( axis, newServo )
+
 	def comSAMSTART( self, axis, sampleValue, interval, size, rate ):
 	
 		"""This is the binding to the SAMSTART tcsng command
@@ -613,30 +615,6 @@ class telescope:
 
 	def comDomeAutoOn( self ):
 		return self.command("DOME AUTO ON")
-
-	def comDOMEGOTO( self, dome_az ):
-		return self.command("DOMEGOTO {az:.2f}".format(az=dome_az))
-
-	def comDOME_LEFT( self ):
-		return self.command( "DOME PADDLE LEFT" )
-
-	def comDOME_RIGHT( self ):
-		return self.command( "DOME PADDLE RIGHT" )
-
-
-	
-	def comLIMIT(inhibit=False):
-		"""If limit is true inhibits TCS limits
-			this is very dangerous!
-			else egages the limts.
-		"""
-		if inhibit:
-			com = "LIMIT INHIBIT"
-			
-		else:
-			com = "LIMIT"
-			
-		return self.command(com)
 
 	def reqTIME( self ):
 		return self.request("TIME")
