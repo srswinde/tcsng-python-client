@@ -7,7 +7,7 @@ import time
 from astro.locales import tucson; T=tucson()
 from exceptions import Exception
 from threading import Lock, RLock
-
+import datetime
 
 DEBUG=False
 
@@ -276,6 +276,18 @@ class telescope:
 			return []
 			
 		return [alt, az]
+	
+	def reqTIMESATELAZ( self  ):
+		respStr = self.request( "TIMESATELAZ" )
+		respList = [val for val in respStr.split() if val != '']
+		altStr, azStr, dateStr, timeStr = respList
+		alt = Deg10(float(altStr) )
+		az = Deg10( float(altStr) )
+		mon, day, year = [ int( val ) for val in dateStr.split('-')  ]
+		ut = Deg10( 15*int( timeStr )/(1e3*3600) )
+		hh,mm,ss = ut.hours
+		dt = datetime.datetime( year, mon, day, hh, mm, int(ss), int((ss-int(ss))*1e6) )
+		return { 'el':alt, 'az':az, 'datetime':dt, 'ut':ut, 'tstr':timeStr }
 	
 	def comSATTRACK( self, track=False ):
 	
