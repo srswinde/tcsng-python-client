@@ -282,7 +282,7 @@ class telescope:
 		respList = [val for val in respStr.split() if val != '']
 		altStr, azStr, dateStr, timeStr = respList
 		alt = Deg10(float(altStr) )
-		az = Deg10( float(altStr) )
+		az = Deg10( float(azStr) )
 		mon, day, year = [ int( val ) for val in dateStr.split('-')  ]
 		ut = Deg10( 15*int( timeStr )/(1e3*3600) )
 		hh,mm,ss = ut.hours
