@@ -296,6 +296,28 @@ class telescope:
 		dt = datetime.datetime( year, mon, day, hh, mm, int(ss), int((ss-int(ss))*1e6) )
 		return { 'el':alt, 'az':az, 'datetime':dt, 'ut':ut, 'tstr':timeStr }
 	
+	def comDOMEGOTO( self, dome_az ):
+		return self.command("DOMEGOTO {az:.2f}".format(az=dome_az))
+
+	def comDOME_LEFT( self ):
+		return self.command( "DOME PADDLE LEFT" )
+
+	def comDOME_RIGHT( self ):
+		return self.command( "DOME PADDLE RIGHT" )
+
+
+ 
+	def comLIMIT(inhibit=False):
+		"""If limit is true inhibits TCS limits
+		this is very dangerous!
+		else egages the limts.
+		"""
+		if inhibit:
+			com = "LIMIT INHIBIT"
+ 
+		else:
+			com = "LIMIT"
+
 	def comSATTRACK( self, track=False ):
 	
 		"""if track start tracking the current tle
