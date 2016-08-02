@@ -296,6 +296,34 @@ class telescope:
 		dt = datetime.datetime( year, mon, day, hh, mm, int(ss), int((ss-int(ss))*1e6) )
 		return { 'el':alt, 'az':az, 'datetime':dt, 'ut':ut, 'tstr':timeStr }
 	
+	def reqTIMESATINFO( self ):
+		respStr = self.request( 'TIMESATINFO' )
+		if ("NO TLE" in respStr):
+			raise Exception("No Tle set yet!")
+		respList = respStr.split()
+		dateStr = respList[-2]
+		timeStr = respList[-1]
+		mon, day, year = [ int( val ) for val in dateStr.split('-')  ]
+		ut = Deg10( 15*int( timeStr )/(1e3*3600) )
+		hh,mm,ss = ut.hours
+		dt = datetime.datetime( year, mon, day, hh, mm, int(ss), int((ss-int(ss))*1e6) )
+		resp = {
+			'el'		: Deg10( float( respList[0] ) ),
+			'az'		: Deg10( float( respList[1] ) ),
+			'eci_x'		: float( respList[2] ),
+			'eci_y'		: float( respList[3] ),
+			'eci_z'		: float( respList[4] ),
+			'ecef_x'	: float( respList[5] ),
+			'ecef_y'	: float( respList[6] ),
+			'ecef_z'    : float( respList[7] ),
+			'datetime'	: dt
+			
+
+		}
+		return resp
+		
+		
+	
 	def comDOMEGOTO( self, dome_az ):
 		return self.command("DOMEGOTO {az:.2f}".format(az=dome_az))
 
