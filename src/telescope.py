@@ -205,7 +205,14 @@ class telescope:
 		xra = dict( zip( listMap, valList ) )
 		xra["current"] = str(self.reqRA())
 		return xra
-			
+	def reqLIMIT( self ):
+		raw = self.request("LIMIT")
+
+		p1, p2 = raw.split()
+                
+		return {'limport1': hex(int(p1)), 'limport2': hex(int(p2))}
+
+
 	def reqDEC( self ):
 		"""Binding for tcsng request DEC"""
 		raw = self.request( "DEC" )
