@@ -322,6 +322,16 @@ class telescope:
 		}
 		return resp
 		
+	
+	def reqPADGUIDE( self ):
+		#request the paddle guide rates
+		resp = self.request("PADGUIDE")
+		return float( resp )
+	
+	def reqPADDRIFT( self ):
+		#request the paddle drift rates
+		resp = self.request("PADDRIFT")
+		return float( resp )
 		
 	
 	def comDOMEGOTO( self, dome_az ):
@@ -676,7 +686,20 @@ class telescope:
 		
 		#data.extend( [long( ii ) for ii in rawData if ii != '' ] )
 		#return data
+
+	def comPADGUIDE( self, rate ):
+		#change the paddle guide rates
+		if type(rate) is not float:
+			raise TypeError("rate should be float")
+		return self.command( "PADGUIDE {}".format(rate) )
+		
 	
+	def comPADDRIFT( self, rate ):
+                #change the paddle drift rates
+                if type(rate) is not float:
+                        raise TypeError("rate should be float")
+                return self.command( "PADDRIFT {}".format(rate) )
+
 		
 	
 	def comSAMABORT( self ):
