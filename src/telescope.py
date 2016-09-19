@@ -504,6 +504,16 @@ class telescope:
 		any other value speed will be slow"""
 		self.command("FOCSPEED {0}".format(speed))
 		
+	def comFOCUS( self, pos ):
+		"""Set the absolute focus position"""
+		self.command("FOCUS {}".format(pos))
+	
+	def comRELFOC( self, relpos ):
+		"""Set the position of focus relative
+			to its current position."""
+		self.command( "RELFOCUS {}".format(relpos) )
+
+	
 	
 	def comPAD( self, DIR, rate ):
 		"""Telescope Paddle command"""
