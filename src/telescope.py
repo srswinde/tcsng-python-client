@@ -212,6 +212,25 @@ class telescope:
                 
 		return {'limport1': hex(int(p1)), 'limport2': hex(int(p2))}
 
+	def reqLIMITmap( self ):
+		"""Grabs the limits from tcs and uses a python dictionary
+		to map the bits to a handy name"""
+		raw = self.request("LIMIT")
+
+		#seperate the limit ports
+		p1, p2 = [int(port) for port in raw.split() ]
+		return {	
+			'ha'		:bool(p2 & 0x01),
+			'dec'		:bool(p2 & 0x02),
+			'hor'		:bool(p2 & 0x04),
+			'hardstow_north':bool(p2 & 0x08),
+			'hardstow_east'	:bool(p2 & 0x10),
+			'dome_home'	:bool(p2 & 0x20),
+			'foucus_up'	:bool(p2 & 0x40),
+			'foucus_down'	:bool(p2 & 0x80),
+			
+		}
+		
 
 	def reqDEC( self ):
 		"""Binding for tcsng request DEC"""
@@ -272,7 +291,6 @@ class telescope:
 			}
 		return prog
 	
-		
 		
 	def reqGETSATELAZ(self):
 		respStr = self.request( "GETSATELAZ"  )
@@ -357,7 +375,7 @@ class telescope:
  
 		else:
 			com = "LIMIT"
-
+	
 	def comSATTRACK( self, track=False ):
 	
 		"""if track start tracking the current tle
@@ -748,9 +766,6 @@ class legacyTel(  ):
 	def __init__(ip, port=5750):
 		pass
 	
-if __name__ == '__main__':
-	t=telescope("10.130.133.12", "MOCK")
-	print t.reqALL()
 
 
 	
