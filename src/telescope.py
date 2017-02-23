@@ -343,6 +343,8 @@ class telescope:
 	def comDOME_RIGHT( self ):
 		return self.command( "DOME PADDLE RIGHT" )
 
+	def comDOME_STOP( self ):
+		return self.command("DOME PADDLE")
 
  
 	def comLIMIT(inhibit=False):
