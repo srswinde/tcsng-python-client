@@ -9,6 +9,10 @@ from exceptions import Exception
 from threading import Lock, RLock
 import datetime
 
+
+import threading 
+import Queue
+
 DEBUG=False
 
 AXES = {"RA":0, "Dec": 1, "ra":0, "dec":1, "DEC":1}
@@ -738,6 +742,11 @@ class telescope:
 	def comDomeAutoOn( self ):
 		return self.command("DOME AUTO ON")
 
+	def comDOME(self, arg):
+
+		if arg == "STOW":
+			self.command("DOME STOW")
+
 	def reqTIME( self ):
 		return self.request("TIME")
 
@@ -745,30 +754,118 @@ class telescope:
 		return self.request("ST")
 
 
-class ray( telescope ):
-	def __init__(self ):
-		telescope.__init__(self, "qnxtcs" )
-		
-class kuiper( telescope ):
-	def __init__( self ):
-		telescope.__init__( self, "10.30.5.69", "BIG61" )		
-		
 class telComError( Exception ):
 	def __init__( self, message ):
 		Exception.__init__( self, message)
+
+class Ray( telescope ):
+	def __init__(self ):
+		telescope.__init__(self, "qnxtcs" )
 		
-		
-class jt( telescope ):
+class Kuiper( telescope ):
 	def __init__( self ):
-		telescope.__init__( self, "jefftest5" )
+		telescope.__init__( self, "10.30.5.69", "BIG61" )		
+		
+class Schmidt( telescope ):
+	def __init__( self ):
+		telescope.__init__( self, 192.168.2.26, "SCHMI" )
 
-class legacyTel(  ):
-	def __init__(ip, port=5750):
-		pass
-	
+class Lem40( telescope ):
+	def __init__( self ):
+		telescope.__init__( self, 192.168.2.40, "LEM40" )
+
+class Lem60( telescope ):
+	def __init__( self ):
+		telescope.__init__( self, 192.168.2.60, "LEM60" )
 
 
-	
+
+def teldict():
+	return {
+		"Ray-Campus21"		: Ray,
+		"Kuiper-Big61"		: Kuiper,
+		"Schmidt-Bigelow"	: Schmidt,
+		"CSS-Lemmon40"		: Lem40, 
+		"CSS-Lemmon60"		: Lem60, 
+		}
 
 	
 	
+class TelThread(threading.Thread):
+	"""A threaded version of the telescope class
+	This class queries the telescope at 10hz 
+	and remembers the values, so each time a request 
+	is called it doesn't query the telescope it looks 
+	for the value in the valdict"""
+
+	def __init__(self, tel_class=None, ipaddr='192.168.2.26', name="SCHMI", maxattempts=5, rate=10):
+		"""Constructor:
+		Instantiates the telescope class if the connection
+		is bad it tries a few times
+		Args:	tel_class-> Telescope class that is already site specific
+				ipaddr-> ip address to instantiate telescope class	
+				name-> ng protocal name of telescope
+				maxattempts-> number of times to try to contact the telescope by instantiating telescope class. 
+		"""
+
+		threading.Thread.__init__(self)		
+		self.telcomLock = threading.Lock()
+		self.rate = 10
+		while True:
+			try:
+				if tel_class:
+					self.telescope = tel_class()
+				else:
+					self.telescope = telescope(ipaddr, name)
+				attempts = maxattempts+1
+				break
+			except Exception as err:
+				time.sleep(0.5)
+				print err
+				print "Trying again"
+				if attempts > maxattempts:
+					raise Exception("Could not connect to telescope.")
+				attempts+=1
+				
+		self.running = None
+		self.reqdict = {}
+		self.valdict = {}
+
+	def __getattr__(self, attr):
+	"""For requests we add the method to the reqdict
+	to be evaluated in a stack at 10hz"""
+
+		if hasattr(self.telescope, attr):
+			if attr[:3] == 'req':
+				if attr in self.valdict.keys():
+					return lambda: self.valdict[attr]
+				else:
+					self.reqdict[attr] = getattr(self.telescope, attr)
+					if self.running == None:# if not Running 
+						self.start() #...Start the thread. 
+
+					return getattr(self.telescope, attr)
+			elif attr[:3] == 'com':
+				return getattr(self.telescope, attr)
+
+
+	def run(self):
+		self.running = True
+		while self.running:
+			for key, method in self.reqdict.iteritems():
+				try:
+					with self.telcomLock:
+						self.valdict.update({key:method()})
+				except Exception as err:
+					print  err
+			time.sleep( 1/float(self.rate ) ) 
+
+	def stop(self):
+		self.running = False
+
+	def join():
+		self.running=False
+		time.sleep(0.01)
+		return super(self).join()
+		
+

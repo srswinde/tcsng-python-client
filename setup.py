@@ -7,6 +7,6 @@ setup(name='telescope',
       description='TCSng telescope client class',
       author='Scott Swindell',
       author_email='scottswindell@email.arizona.edu',
-	  py_modules = ['telescope', "minitel"],
+	  py_modules = ['telescope', "minitel" ],
           package_dir = {'':'src'}
      )
