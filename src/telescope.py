@@ -9,7 +9,7 @@ from exceptions import Exception
 from threading import Lock, RLock
 import datetime
 
-
+import select
 import threading 
 import Queue
 
@@ -76,13 +76,16 @@ class telescope:
 			try:
 				s.connect((HOST, PORT))
 				s.send("%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper()) )
-				recvstr = s.recv(4096)
+				ready = select.select([s], [], [], 1.0)
+				if ready[0]:                              
+
+					recvstr = s.recv(4096)
 				s.close()
 				if DEBUG:
 					print "%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper())
 				return recvstr[len(self.telid)+6:-1]
 			except socket.error:
-				msg = "Cannot communicate with telescope {0}".format(self.hostname)
+				msg = "Cannot communicate with telescope {0} request {1} was not sent!".format(self.hostname, reqstr)
 				raise telComError(msg)
 				time.sleep(1.0)
 		
@@ -92,12 +95,19 @@ class telescope:
 	
 		HOST = socket.gethostbyname(self.hostname)
 		PORT= 5750
-		s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.connect((HOST, PORT))
-		s.send("%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() ) )
-		recvstr = s.recv( 4096 ) 
-		s.settimeout( timeout )
-		s.close()
+		try:
+			s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((HOST, PORT))
+			s.send("%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() ) )
+			ready = select.select([s], [], [], 1.0)
+			if ready[0]:                              
+
+				recvstr = s.recv( 4096 ) 
+			s.settimeout( timeout )
+			s.close()
+		except socket.error:
+			msg = "Cannot communicate with telescope {0} request {1} was not sent!".format(self.hostname, reqstr)
+			raise telComError(msg)
 		if DEBUG:
 			print "%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() )
 		return recvstr
@@ -147,7 +157,8 @@ class telescope:
 		"""Binding for tcsng request RA"""
 		raw = self.request("RA")
 		return self.string2RAAngle(raw)
-	
+	def reqHA(self):
+		return self.request("HA")
 	def reqXALL( self ):
 		"""returns dictions of "XALL" request i.e.
 			[FOC] [DOME] [IIS] [PA] [UTD] [JD]"""
@@ -768,17 +779,20 @@ class Kuiper( telescope ):
 		
 class Schmidt( telescope ):
 	def __init__( self ):
-		telescope.__init__( self, 192.168.2.26, "SCHMI" )
+		telescope.__init__( self, '192.168.2.26', "SCHMI" )
 
 class Lem40( telescope ):
 	def __init__( self ):
-		telescope.__init__( self, 192.168.2.40, "LEM40" )
+		telescope.__init__( self, '192.168.2.40', "LEM40" )
 
 class Lem60( telescope ):
 	def __init__( self ):
-		telescope.__init__( self, 192.168.2.60, "LEM60" )
+		telescope.__init__( self, '192.168.2.60', "LEM60" )
 
 
+class kuiper( telescope ):
+	def __init__( self ):
+		telescope.__init__( self, "10.30.5.69", "BIG61" )		
 
 def teldict():
 	return {
@@ -798,7 +812,7 @@ class TelThread(threading.Thread):
 	is called it doesn't query the telescope it looks 
 	for the value in the valdict"""
 
-	def __init__(self, tel_class=None, ipaddr='192.168.2.26', name="SCHMI", maxattempts=5, rate=10):
+	def __init__(self,  ipaddr='192.168.2.26', name="SCHMI", maxattempts=5, rate=10, tel_class=None):
 		"""Constructor:
 		Instantiates the telescope class if the connection
 		is bad it tries a few times
@@ -811,6 +825,7 @@ class TelThread(threading.Thread):
 		threading.Thread.__init__(self)		
 		self.telcomLock = threading.Lock()
 		self.rate = 10
+		attempts=0
 		while True:
 			try:
 				if tel_class:
@@ -832,32 +847,38 @@ class TelThread(threading.Thread):
 		self.valdict = {}
 
 	def __getattr__(self, attr):
-	"""For requests we add the method to the reqdict
-	to be evaluated in a stack at 10hz"""
+		"""For requests we add the method to the reqdict
+		to be evaluated in a stack at 10hz"""
 
 		if hasattr(self.telescope, attr):
-			if attr[:3] == 'req':
+			
+			
+			if attr[:3] == 'req' and attr != 'request' and attr != "reqSERVO":
 				if attr in self.valdict.keys():
 					return lambda: self.valdict[attr]
 				else:
-					self.reqdict[attr] = getattr(self.telescope, attr)
+					with self.telcomLock:
+						self.reqdict[attr] = getattr(self.telescope, attr)
 					if self.running == None:# if not Running 
 						self.start() #...Start the thread. 
 
 					return getattr(self.telescope, attr)
-			elif attr[:3] == 'com':
+			else:
 				return getattr(self.telescope, attr)
+				
 
 
 	def run(self):
 		self.running = True
 		while self.running:
-			for key, method in self.reqdict.iteritems():
+			with self.telcomLock:
+				reqdict = self.reqdict
+			for key, method in reqdict.iteritems():
 				try:
 					with self.telcomLock:
 						self.valdict.update({key:method()})
 				except Exception as err:
-					print  err
+					print  "Error in run thread",key, err
 			time.sleep( 1/float(self.rate ) ) 
 
 	def stop(self):
