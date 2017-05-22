@@ -49,11 +49,12 @@ class telescope:
 	#for letter (underscore = whitespace)copy of the 
 	#tcsng command or request
 	
-	def __init__(self, hostname, telid="TCSNG"):
+	def __init__(self, hostname, telid="TCSNG", port=5750):
 		try:
 			self.ipaddr = socket.gethostbyname(hostname)
 			self.hostname = hostname
 			self.telid=telid
+			self.port = port
 		except socket.error:
 			raise telComError("Cannot Find Telescope Host {0}.".format(hostname) )
 		
@@ -70,7 +71,7 @@ class telescope:
 		
 		with self.comLock:
 			HOST = socket.gethostbyname(self.hostname)
-			PORT= 5750
+			PORT= self.port
 			s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.settimeout( timeout )
 			try:
@@ -94,7 +95,7 @@ class telescope:
 			server commands must come through here."""
 	
 		HOST = socket.gethostbyname(self.hostname)
-		PORT= 5750
+		PORT= self.port
 		try:
 			s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.connect((HOST, PORT))
