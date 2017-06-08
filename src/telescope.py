@@ -68,7 +68,7 @@ class telescope:
 				
 		"""This is the main TCSng request method all 
 		server requests must come through here."""
-		
+		recvstr=''
 		with self.comLock:
 			HOST = socket.gethostbyname(self.hostname)
 			PORT= self.port
@@ -77,10 +77,10 @@ class telescope:
 			try:
 				s.connect((HOST, PORT))
 				s.send("%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper()) )
-				ready = select.select([s], [], [], 1.0)
+				ready = select.select([s], [], [], 3.0)
 				if ready[0]:                              
 
-					recvstr = s.recv(4096)
+					recvstr = s.recv(2048)
 				s.close()
 				if DEBUG:
 					print "%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper())
