@@ -2,9 +2,19 @@
 
 
 import socket
-from astro.angles import Angle, RA_angle, Dec_angle, Deg10, Hour_angle
+
+try:
+
+	from astro.angles import Angle, RA_angle, Dec_angle, Deg10, Hour_angle
+	from astro.locales import tucson; T=tucson()
+	scott_astro = True
+except ImportError:
+	#you don't have scott's astro utils library
+	scott_astro = False
+	
 import time
-from astro.locales import tucson; T=tucson()
+
+
 from exceptions import Exception
 from threading import Lock, RLock
 import datetime
@@ -119,7 +129,10 @@ class telescope:
 			and seconds in the string ie 084000.0
 			instead of 08:40:00.0 the later format 
 			can be handled directly by RA_angle class"""
-			
+
+		if not scott_astro:
+			return rawAngle
+
 		rawAngle = rawAngle.strip()
 		HH = int( rawAngle[0:2] )
 		MM = int( rawAngle[2:4] )
@@ -132,7 +145,9 @@ class telescope:
 			and arcseconds in the string ie +320000.0
 			instead of +32:00:00.0 the latter format 
 			can be handled directly by Dec_angle class"""
-			
+		
+		if not scott_astro:
+			return rawAngle
 		rawAngle = rawAngle.strip()
 		Deg = int( rawAngle[0:3] )
 		arcmin = int( rawAngle[3:5] )
@@ -279,7 +294,11 @@ class telescope:
 		return motion
 	
 	def reqST( self ):
+			
 		raw = self.request('ST').split(' ')[-2]
+		if not scott_astro:
+			return raw
+		
 		return RA_angle(raw)
 	
 	def reqPECSTAT( self ):
@@ -380,6 +399,11 @@ class telescope:
 	def comDOME_STOP( self ):
 		return self.command("DOME PADDLE")
 
+	def reqGITREV(self):
+		"""Returns the git revision number 
+		of the current running instance 
+		of TCS."""
+		return self.request("GITREV")
  
 	def comLIMIT(inhibit=False):
 		"""If limit is true inhibits TCS limits
@@ -842,7 +866,7 @@ class TelThread(threading.Thread):
 				if attempts > maxattempts:
 					raise Exception("Could not connect to telescope.")
 				attempts+=1
-				
+		self.telescope.comLock = self.telcomLock		
 		self.running = None
 		self.reqdict = {}
 		self.valdict = {}
