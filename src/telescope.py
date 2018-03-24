@@ -83,7 +83,7 @@ class telescope:
 				s.close()
 				if DEBUG:
 					print("%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper()))
-				return recvstr[len(self.telid)+6:-1]
+				return recvstr[len(self.telid)+6:-1].decode()
 			except socket.error:
 				msg = "Cannot communicate with telescope {0} request {1} was not sent!".format(self.hostname, reqstr)
 				raise telComError(msg)
