@@ -15,13 +15,12 @@ except ImportError:
 import time
 
 
-from exceptions import Exception
 from threading import Lock, RLock
 import datetime
 
 import select
 import threading 
-import Queue
+import queue
 
 DEBUG=False
 
@@ -86,15 +85,15 @@ class telescope:
 			s.settimeout( timeout )
 			try:
 				s.connect((HOST, PORT))
-				s.send("%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper()) )
+				s.send("{} TCS 1 REQUEST {}".format(self.telid, reqstr.upper()).encode() )
 				ready = select.select([s], [], [], 3.0)
 				if ready[0]:                              
 
 					recvstr = s.recv(2048)
 				s.close()
 				if DEBUG:
-					print "%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper())
-				return recvstr[len(self.telid)+6:-1]
+					print("%s TCS 1 REQUEST %s" %(self.telid, reqstr.upper()))
+				return recvstr[len(self.telid)+6:-1].decode()
 			except socket.error:
 				msg = "Cannot communicate with telescope {0} request {1} was not sent!".format(self.hostname, reqstr)
 				raise telComError(msg)
@@ -109,7 +108,7 @@ class telescope:
 		try:
 			s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.connect((HOST, PORT))
-			s.send("%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() ) )
+			s.send("{} TCS 123 COMMAND {}".format( self.telid, reqstr.upper() ).encode() )
 			ready = select.select([s], [], [], 1.0)
 			if ready[0]:                              
 
@@ -120,7 +119,7 @@ class telescope:
 			msg = "Cannot communicate with telescope {0} request {1} was not sent!".format(self.hostname, reqstr)
 			raise telComError(msg)
 		if DEBUG:
-			print "%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() )
+			print("%s TCS 123 COMMAND %s" %( self.telid, reqstr.upper() ))
 		return recvstr
 		
 	def string2RAAngle( self, rawAngle ):
@@ -233,7 +232,7 @@ class telescope:
 		raw = self.request("XRA")
 		valList = [ii for ii in raw.split() if ii != '']#remove white spaces and convert to list
 		
-		xra = dict( zip( listMap, valList ) )
+		xra = dict( list(zip( listMap, valList )) )
 		xra["current"] = str(self.reqRA())
 		return xra
 	def reqLIMIT( self ):
@@ -284,7 +283,7 @@ class telescope:
 		raw = self.request( "XDEC" )
 		valList = [ii for ii in raw.split() if ii != '']#remove white spaces and convert to list
 		
-		xdec = dict( zip( listMap, valList ) )
+		xdec = dict( list(zip( listMap, valList )) )
 		xdec["current"] = str(self.reqDEC())
 		return xdec
 	
@@ -641,9 +640,9 @@ class telescope:
 							
 		rawServoString = self.request("SERVO %i" %axis)
 		rawServoList = rawServoString.split(' ')
-		servoList = [long( ii ) for ii in rawServoList if ii != '' ]
+		servoList = [int( ii ) for ii in rawServoList if ii != '' ]
 		
-		return dict( zip( servoMapList, servoList ) )
+		return dict( list(zip( servoMapList, servoList )) )
 	
 	def comMOVSTOW( self ):
 		return self.command("MOVSTOW")
@@ -683,7 +682,7 @@ class telescope:
 	def comSetOneServo( self, axis, servoName, servoVal ):
 		newServo = self.reqSERVO( axis )
 		
-		if servoName in newServo.keys():
+		if servoName in list(newServo.keys()):
 			newServo[servoName] = int( servoVal )
 		
 		return self.comSERVO( axis, newServo )
@@ -700,7 +699,7 @@ class telescope:
 		
 		
 		outstr = "SAMSTART {0} {1} {2} {3} {4}".format( axis, sampleValue, size, interval, rate )
-		print outstr
+		print(outstr)
 		return self.command(outstr)
 		#return self.command(outstr)
 	
@@ -733,7 +732,7 @@ class telescope:
 		for a in range( 33 ):
 			rawData = self.reqSAMDATA( 30*a, 30*(a+1) )
 			rawData = rawData.split(' ')
-			data.extend( [long( ii ) for ii in rawData if ii != '' ] )
+			data.extend( [int( ii ) for ii in rawData if ii != '' ] )
 			
 		return data
 	
@@ -746,12 +745,12 @@ class telescope:
 		while cnt < howMany-30:
 			rawData = self.reqSAMDATA( cnt, cnt+maxCnt )
 			rawData = rawData.split(' ')
-			data.extend( [long( ii ) for ii in rawData if ii != '' ] )
+			data.extend( [int( ii ) for ii in rawData if ii != '' ] )
 			cnt+=30
 			
 		rawData = self.reqSAMDATA( cnt, howMany )	
 		rawData = rawData.split(' ')
-		data.extend( [long( ii ) for ii in rawData if ii != '' ] )
+		data.extend( [int( ii ) for ii in rawData if ii != '' ] )
 		return data
 		
 		#data.extend( [long( ii ) for ii in rawData if ii != '' ] )
@@ -861,8 +860,8 @@ class TelThread(threading.Thread):
 				break
 			except Exception as err:
 				time.sleep(0.5)
-				print err
-				print "Trying again"
+				print(err)
+				print("Trying again")
 				if attempts > maxattempts:
 					raise Exception("Could not connect to telescope.")
 				attempts+=1
@@ -879,7 +878,7 @@ class TelThread(threading.Thread):
 			
 			
 			if attr[:3] == 'req' and attr != 'request' and attr != "reqSERVO":
-				if attr in self.valdict.keys():
+				if attr in list(self.valdict.keys()):
 					return lambda: self.valdict[attr]
 				else:
 					with self.telcomLock:
@@ -898,12 +897,12 @@ class TelThread(threading.Thread):
 		while self.running:
 			with self.telcomLock:
 				reqdict = self.reqdict
-			for key, method in reqdict.iteritems():
+			for key, method in reqdict.items():
 				try:
 					with self.telcomLock:
 						self.valdict.update({key:method()})
 				except Exception as err:
-					print  "Error in run thread",key, err
+					print("Error in run thread",key, err)
 			time.sleep( 1/float(self.rate ) ) 
 
 	def stop(self):
@@ -914,4 +913,6 @@ class TelThread(threading.Thread):
 		time.sleep(0.01)
 		return super(self).join()
 		
-
+if __name__ == "__main__":
+	vatt = telescope("vatttel.vatt","VATT")
+	
