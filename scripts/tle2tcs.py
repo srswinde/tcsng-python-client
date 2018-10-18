@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/bin/python3
 from telescope import kuiper
 import sys
 import time
